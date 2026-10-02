@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+pydantic[email]>=2.6
+google-genai>=1.2.0
+sqlalchemy>=2.0
+psycopg2-binary>=2.9   # only needed if DATABASE_URL points at PostgreSQL
+pyjwt>=2.7
+python-multipart>=0.0.9   # required by FastAPI's OAuth2PasswordRequestForm
+httpx>=0.27   # required by fastapi.testclient (tests/test_api.py)

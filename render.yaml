@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: rootcause-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ROOTCAUSE_DB
+        value: /opt/render/project/src/backend/rootcause.db

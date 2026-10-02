@@ -1,0 +1,142 @@
+[
+  {
+    "id": "vectors", "name": "Vectors", "prereqs": [], "aliases": ["vector"],
+    "summary": "An ordered list of numbers that represents a point or a direction in space.",
+    "key_points": ["a vector is an ordered list of numbers", "it has a length (magnitude) and a direction", "vectors are added and scaled component by component"],
+    "probe": {"q": "In one or two sentences: what is a vector, and what does it mean to add two vectors?",
+              "keywords": [["list", "array", "ordered", "numbers", "point", "direction", "arrow"], ["add", "sum", "component", "element", "tip", "coordinate"]]}
+  },
+  {
+    "id": "dot-product", "name": "Dot product", "prereqs": ["vectors"], "aliases": ["dot product", "inner product"],
+    "summary": "The sum of element-wise products of two equal-length vectors; it measures how aligned they are.",
+    "key_points": ["multiply matching components then sum them", "the result is a single number (a scalar)", "large and positive when vectors point the same way, zero when perpendicular"],
+    "probe": {"q": "Compute the dot product of [1, 2, 3] and [4, 5, 6], and say what it measures.",
+              "keywords": [["32"], ["align", "similar", "direction", "angle", "perpendicular", "orthogonal", "projection", "overlap"]]}
+  },
+  {
+    "id": "matrix-multiplication", "name": "Matrix multiplication", "prereqs": ["vectors", "dot-product"], "aliases": ["matmul", "matrix product", "matrix multiply"],
+    "summary": "Each output entry is the dot product of a row of A with a column of B; the inner dimensions must match.",
+    "key_points": ["each output entry is a dot product of a row and a column", "the inner dimensions must match", "an (m x n) times (n x p) matrix gives an (m x p) matrix"],
+    "probe": {"q": "If A is 2x3 and B is 3x4, what is the shape of A·B and how is each entry computed?",
+              "keywords": [["2x4", "2 x 4", "(2, 4)", "2 by 4", "2×4"], ["row", "column", "dot"]]}
+  },
+  {
+    "id": "cosine-similarity", "name": "Cosine similarity", "prereqs": ["dot-product"], "aliases": ["cosine", "cos sim"],
+    "summary": "The dot product divided by the product of the two vector lengths; it compares direction and ignores magnitude.",
+    "key_points": ["dot product divided by the product of the two lengths", "it compares direction and ignores magnitude", "1 means same direction, 0 means unrelated, -1 means opposite"],
+    "probe": {"q": "What does a cosine similarity of 1, of 0, and of -1 tell you about two vectors?",
+              "keywords": [["same direction", "identical direction", "aligned", "parallel", "point the same", "similar"], ["orthogonal", "perpendicular", "unrelated", "independent", "no similarity"], ["opposite", "-1 means"]]}
+  },
+  {
+    "id": "derivatives", "name": "Derivatives", "prereqs": [], "aliases": ["derivative", "differentiation"],
+    "summary": "The instantaneous rate of change of a function: the slope of its tangent line at a point.",
+    "key_points": ["a derivative is the instantaneous rate of change", "it is the slope of the tangent line at a point", "it says how much the output moves for a tiny change in the input"],
+    "probe": {"q": "What does the derivative of a function at a point tell you?",
+              "keywords": [["rate", "slope", "tangent", "change"], ["output", "function", "input", "small", "instant", "steep"]]}
+  },
+  {
+    "id": "partial-derivatives", "name": "Partial derivatives", "prereqs": ["derivatives"], "aliases": ["partial derivative"],
+    "summary": "The derivative with respect to one variable while every other variable is held constant.",
+    "key_points": ["differentiate with respect to one variable only", "all other variables are treated as constants", "each partial derivative measures sensitivity to one input"],
+    "probe": {"q": "For f(x, y) = x^2 * y, what is the partial derivative with respect to x, and what do you do with y?",
+              "keywords": [["2xy", "2*x*y", "2 x y", "2x*y", "2x y"], ["constant", "hold", "fixed", "treat y", "ignore y"]]}
+  },
+  {
+    "id": "chain-rule", "name": "Chain rule", "prereqs": ["derivatives"], "aliases": ["chain rule"],
+    "summary": "The derivative of a composition f(g(x)) is f'(g(x)) multiplied by g'(x).",
+    "key_points": ["the derivative of f(g(x)) is f'(g(x)) times g'(x)", "derivatives of nested functions multiply, they do not add", "differentiate the outer function then multiply by the inner derivative"],
+    "probe": {"q": "What is d/dx of f(g(x))? Give the rule in words or symbols.",
+              "keywords": [["f'(g", "f prime", "derivative of the outer", "outer"], ["multipl", "times", "product", " * ", "×"], ["g'(x)", "inner", "g prime", "derivative of g"]]}
+  },
+  {
+    "id": "gradients", "name": "Gradients", "prereqs": ["partial-derivatives"], "aliases": ["gradient"],
+    "summary": "The vector of all partial derivatives; it points in the direction of steepest increase.",
+    "key_points": ["the gradient is the vector of all partial derivatives", "it points in the direction of steepest increase", "moving against it decreases the function fastest"],
+    "probe": {"q": "Which direction does the gradient of a loss point, and how would you use it to reduce the loss?",
+              "keywords": [["steepest", "increase", "ascent", "uphill", "greatest", "grows"], ["opposite", "negative", "minus", "against", "descent", "downhill", "subtract"]]}
+  },
+  {
+    "id": "gradient-descent", "name": "Gradient descent", "prereqs": ["gradients"], "aliases": ["sgd", "learning rate", "optimizer", "optimiser"],
+    "summary": "Repeatedly update parameters by stepping against the gradient: w = w - lr * grad.",
+    "key_points": ["update parameters with w = w - learning_rate * gradient", "step against the gradient to go downhill on the loss", "a learning rate that is too large overshoots and can diverge"],
+    "probe": {"q": "Write the gradient descent update rule and say what happens if the learning rate is too large.",
+              "keywords": [["w - lr", "w -", "minus", "subtract", "- lr", "-lr", "- α", "-α", "w-"], ["diverge", "overshoot", "unstable", "oscillat", "explode", "bounce", "blow"]]}
+  },
+  {
+    "id": "computational-graphs", "name": "Computational graphs", "prereqs": ["chain-rule"], "aliases": ["computation graph", "compute graph", "autograd"],
+    "summary": "A directed graph whose nodes are operations and whose edges carry values, so gradients can flow backwards node by node.",
+    "key_points": ["nodes are operations and edges carry values", "the forward pass computes outputs node by node", "gradients flow backwards using each node's local derivative"],
+    "probe": {"q": "What is a computational graph and why does it make computing gradients easy?",
+              "keywords": [["node", "operation", "graph", "dag", "step"], ["backward", "reverse", "chain", "local", "flow", "gradient"]]}
+  },
+  {
+    "id": "backpropagation", "name": "Backpropagation", "prereqs": ["chain-rule", "partial-derivatives", "computational-graphs"], "aliases": ["backprop", "back propagation", "back-prop"],
+    "summary": "Efficiently applies the chain rule backwards through a computational graph to get the gradient for every parameter.",
+    "key_points": ["the forward pass computes predictions and the loss", "the backward pass applies the chain rule from the loss back to each parameter", "it reuses intermediate results so all gradients cost about one extra pass"],
+    "probe": {"q": "Explain backpropagation in two sentences: what happens in the forward pass and what happens in the backward pass?",
+              "keywords": [["forward", "predict", "output", "loss", "activation"], ["backward", "chain rule", "gradient", "propagate", "reverse"]]}
+  },
+  {
+    "id": "probability-basics", "name": "Probability basics", "prereqs": [], "aliases": ["probability", "probability distribution", "distribution"],
+    "summary": "Probabilities are non-negative numbers between 0 and 1 that sum to 1 across mutually exclusive outcomes.",
+    "key_points": ["every probability is between 0 and 1", "probabilities of all outcomes sum to 1", "a distribution assigns a probability to each possible outcome"],
+    "probe": {"q": "What two properties must a probability distribution over classes satisfy?",
+              "keywords": [["non-negative", "nonnegative", "positive", "between 0 and 1", "0 and 1", "≥ 0", ">= 0", "not negative", "0 to 1"], ["sum to 1", "sum to one", "adds up to 1", "add up to 1", "total 1", "sums to 1", "sum up to 1", "equal 1", "= 1"]]}
+  },
+  {
+    "id": "softmax", "name": "Softmax", "prereqs": ["probability-basics"], "aliases": ["soft max"],
+    "summary": "Turns a vector of scores into a probability distribution: exp(x_i) / sum_j exp(x_j).",
+    "key_points": ["softmax exponentiates each score then divides by the sum", "the outputs are positive and sum to 1", "subtracting the max score first avoids overflow without changing the result"],
+    "probe": {"q": "What does softmax output, and why is subtracting the max score before exponentiating a common trick?",
+              "keywords": [["probabilit", "sum to 1", "distribution", "sums to one"], ["overflow", "stab", "large", "numerical", "shift", "invariant", "blow"]]}
+  },
+  {
+    "id": "cross-entropy", "name": "Cross-entropy loss", "prereqs": ["softmax"], "aliases": ["cross entropy", "log loss", "nll", "negative log likelihood"],
+    "summary": "Loss = -log(probability assigned to the true class); it punishes confident wrong predictions heavily.",
+    "key_points": ["the loss is the negative log of the probability given to the true class", "it is small when the model is confident and right", "it grows very large when the model is confident and wrong"],
+    "probe": {"q": "A model gives the true class probability 0.9 in one case and 0.1 in another. Which has lower cross-entropy loss, and why?",
+              "keywords": [["0.9", "higher probability", "confident", "correct", "the first"], ["-log", "negative log", "log", "lower", "smaller", "punish"]]}
+  },
+  {
+    "id": "linear-layer", "name": "Linear layer", "prereqs": ["matrix-multiplication"], "aliases": ["dense layer", "fully connected", "fully-connected"],
+    "summary": "Computes y = W x + b: a learned matrix multiply followed by a bias shift.",
+    "key_points": ["it computes y = Wx + b", "W (weights) and b (bias) are the learned parameters", "each output is a weighted sum of all inputs"],
+    "probe": {"q": "What does a linear layer compute, and which parts are learned?",
+              "keywords": [["wx", "w x", "w·x", "matrix", "multipl", "weights", "weighted"], ["bias", " b ", "offset", "parameters", "learned"]]}
+  },
+  {
+    "id": "activation-functions", "name": "Activation functions", "prereqs": ["linear-layer"], "aliases": ["activation", "relu", "sigmoid", "tanh"],
+    "summary": "Non-linear functions (ReLU, sigmoid, tanh) applied after linear layers; without them stacked layers collapse into one linear map.",
+    "key_points": ["activations add non-linearity between layers", "without them any stack of linear layers equals a single linear layer", "ReLU, sigmoid and tanh are common choices"],
+    "probe": {"q": "Why do neural networks need non-linear activation functions between linear layers?",
+              "keywords": [["non-linear", "nonlinear", "non linear"], ["collapse", "single linear", "one linear", "equivalent", "compos", "expressive", "complex", "same as one"]]}
+  },
+  {
+    "id": "embeddings", "name": "Embeddings", "prereqs": ["vectors", "cosine-similarity"], "aliases": ["embedding", "word2vec", "word vectors"],
+    "summary": "Learned dense vectors that place similar tokens or items close together in space.",
+    "key_points": ["an embedding is a learned dense vector for a token or item", "similar meanings end up close together", "closeness is measured with distance or cosine similarity"],
+    "probe": {"q": "What is an embedding and what does it mean for two embeddings to be close?",
+              "keywords": [["vector", "dense", "learned", "lookup", "representation"], ["similar", "meaning", "close", "related", "semantic"]]}
+  },
+  {
+    "id": "attention", "name": "Attention", "prereqs": ["matrix-multiplication", "softmax", "dot-product"], "aliases": ["self-attention", "self attention", "qkv", "query key value", "scaled dot-product"],
+    "summary": "Each token scores every other token with scaled dot products (Q·Kᵀ/√d), softmaxes the scores, and takes a weighted sum of the values.",
+    "key_points": ["queries are compared with keys using dot products", "scores are scaled by sqrt(d) then passed through softmax", "the softmax weights are used to average the values"],
+    "probe": {"q": "In scaled dot-product attention, what are Q, K and V, and why divide the scores by sqrt(d)?",
+              "keywords": [["query", "key", "value"], ["softmax", "weight", "probabilit"], ["sqrt", "scale", "variance", "saturat", "large", "√"]]}
+  },
+  {
+    "id": "positional-encoding", "name": "Positional encoding", "prereqs": ["embeddings"], "aliases": ["positional embedding", "position encoding", "positional embeddings"],
+    "summary": "Adds position information to token embeddings because attention on its own ignores word order.",
+    "key_points": ["attention alone has no notion of token order", "position vectors are added to the token embeddings", "this lets the model tell 'dog bites man' from 'man bites dog'"],
+    "probe": {"q": "Why do transformers need positional encodings?",
+              "keywords": [["order", "position", "sequence"], ["permutation", "no notion", "without", "blind", "parallel", "same regardless", "attention", "ignore"]]}
+  },
+  {
+    "id": "transformers", "name": "Transformers", "prereqs": ["attention", "embeddings", "positional-encoding"], "aliases": ["transformer", "gpt", "bert", "llm architecture"],
+    "summary": "Stacks of self-attention and feed-forward blocks with residual connections and normalisation, running on embeddings plus positions.",
+    "key_points": ["each block has self-attention followed by a feed-forward network", "residual connections and layer normalisation stabilise deep stacks", "input is token embeddings plus positional encodings"],
+    "probe": {"q": "Name the main building blocks of a transformer block.",
+              "keywords": [["attention"], ["feed-forward", "feed forward", "mlp", "ffn"], ["residual", "skip", "layer norm", "layernorm", "normali"]]}
+  }
+]

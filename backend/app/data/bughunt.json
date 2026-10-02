@@ -1,0 +1,66 @@
+{
+  "gradient-descent": {
+    "language": "python",
+    "code": "def gradient_descent_step(w, grad, lr=0.01):\n    # one step of gradient descent\n    w = w + lr * grad\n    return w",
+    "bug_line": 3,
+    "misconception": "Stepping WITH the gradient instead of against it — this climbs the loss instead of descending it.",
+    "hint": "Which direction does the gradient point, and which direction do you want to move?",
+    "fixed_code": "def gradient_descent_step(w, grad, lr=0.01):\n    # one step of gradient descent\n    w = w - lr * grad\n    return w"
+  },
+  "softmax": {
+    "language": "python",
+    "code": "import numpy as np\n\ndef softmax(scores):\n    exp_scores = np.exp(scores)\n    return exp_scores / np.sum(exp_scores)\n\ndef softmax_stable(scores):\n    # meant to be the numerically stable version\n    exp_scores = np.exp(scores)\n    return exp_scores / np.sum(exp_scores)",
+    "bug_line": 9,
+    "misconception": "The 'stable' version never subtracts the max score before exponentiating, so it still overflows on large logits.",
+    "hint": "What trick keeps exp() from overflowing on large scores?",
+    "fixed_code": "def softmax_stable(scores):\n    shifted = scores - np.max(scores)\n    exp_scores = np.exp(shifted)\n    return exp_scores / np.sum(exp_scores)"
+  },
+  "backpropagation": {
+    "language": "python",
+    "code": "def backward(dL_dout, local_grad_f, local_grad_g):\n    # chain rule through two composed functions, f(g(x))\n    dL_dx = dL_dout + local_grad_f + local_grad_g\n    return dL_dx",
+    "bug_line": 3,
+    "misconception": "Chain-rule gradients compose by multiplication, not addition — this adds the local derivatives instead of multiplying them.",
+    "hint": "For f(g(x)), how do f'(g(x)) and g'(x) combine?",
+    "fixed_code": "def backward(dL_dout, local_grad_f, local_grad_g):\n    dL_dx = dL_dout * local_grad_f * local_grad_g\n    return dL_dx"
+  },
+  "attention": {
+    "language": "python",
+    "code": "import numpy as np\n\ndef attention(Q, K, V):\n    scores = Q @ K.T\n    weights = softmax(scores)\n    return weights @ V",
+    "bug_line": 4,
+    "misconception": "Missing the 1/sqrt(d_k) scale on the dot-product scores, so softmax saturates on large dot products.",
+    "hint": "Scaled dot-product attention divides the scores by something before softmax — by what?",
+    "fixed_code": "def attention(Q, K, V):\n    d_k = Q.shape[-1]\n    scores = (Q @ K.T) / np.sqrt(d_k)\n    weights = softmax(scores)\n    return weights @ V"
+  },
+  "cross-entropy": {
+    "language": "python",
+    "code": "import numpy as np\n\ndef cross_entropy(probs, true_class_index):\n    return np.log(probs[true_class_index])",
+    "bug_line": 4,
+    "misconception": "Missing the minus sign — cross-entropy is the NEGATIVE log likelihood, so this rewards low confidence instead of punishing it.",
+    "hint": "As the correct-class probability goes to 0, should the loss go up or down? What does that say about the sign?",
+    "fixed_code": "def cross_entropy(probs, true_class_index):\n    return -np.log(probs[true_class_index])"
+  },
+  "dot-product": {
+    "language": "python",
+    "code": "def dot_product(a, b):\n    total = 0\n    for i in range(len(a)):\n        total = a[i] * b[i]\n    return total",
+    "bug_line": 4,
+    "misconception": "Uses = instead of += -- overwrites the running total each iteration instead of accumulating it, so only the last term survives.",
+    "hint": "After the loop finishes, does 'total' hold the sum of every term, or just one of them?",
+    "fixed_code": "def dot_product(a, b):\n    total = 0\n    for i in range(len(a)):\n        total += a[i] * b[i]\n    return total"
+  },
+  "embeddings": {
+    "language": "python",
+    "code": "import numpy as np\n\ndef cosine_similarity(a, b):\n    dot = np.dot(a, b)\n    return dot / (np.linalg.norm(a) + np.linalg.norm(b))",
+    "bug_line": 5,
+    "misconception": "Adds the two vector norms instead of multiplying them -- cosine similarity normalizes by the PRODUCT of the magnitudes, not their sum.",
+    "hint": "The formula is dot(a,b) / (|a| * |b|). What operator is actually in this line?",
+    "fixed_code": "import numpy as np\n\ndef cosine_similarity(a, b):\n    dot = np.dot(a, b)\n    return dot / (np.linalg.norm(a) * np.linalg.norm(b))"
+  },
+  "matrix-multiplication": {
+    "language": "python",
+    "code": "def matmul(A, B):\n    # A is (m x n), B is (n x p)\n    m, n = len(A), len(A[0])\n    n2, p = len(B), len(B[0])\n    result = [[0] * p for _ in range(m)]\n    for i in range(m):\n        for j in range(p):\n            for k in range(n):\n                result[i][j] += A[i][k] * B[j][k]\n    return result",
+    "bug_line": 10,
+    "misconception": "Indexes B as B[j][k] instead of B[k][j] — walking down a row of B instead of down a column, so it isn't a real dot product against B's columns.",
+    "hint": "For row i of A dotted with column j of B, which index of B should move with k?",
+    "fixed_code": "def matmul(A, B):\n    m, n = len(A), len(A[0])\n    n2, p = len(B), len(B[0])\n    result = [[0] * p for _ in range(m)]\n    for i in range(m):\n        for j in range(p):\n            for k in range(n):\n                result[i][j] += A[i][k] * B[k][j]\n    return result"
+  }
+}

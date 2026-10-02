@@ -1,0 +1,27 @@
+{
+  "gradient-descent": {
+    "update parameters with w = w - learning_rate * gradient": "Why is there a minus sign in the update — what would happen with a plus?",
+    "step against the gradient to go downhill on the loss": "Wait, doesn't the gradient point where the function INCREASES? So why do we go the other way?",
+    "a learning rate that is too large overshoots and can diverge": "What's actually different between a learning rate of 0.01 and one of 5?"
+  },
+  "backpropagation": {
+    "the forward pass computes predictions and the loss": "What does the network actually output before we even talk about gradients?",
+    "the backward pass applies the chain rule from the loss back to each parameter": "Why do we need the chain rule at all — why not just compute each parameter's gradient directly?",
+    "it reuses intermediate results so all gradients cost about one extra pass": "Isn't computing every parameter's gradient really expensive? Why is it only about as costly as one more forward pass?"
+  },
+  "softmax": {
+    "softmax exponentiates each score then divides by the sum": "Why exponentiate at all — why not just divide the raw scores by their sum?",
+    "the outputs are positive and sum to 1": "Can a softmax output ever be negative or exceed 1?",
+    "subtracting the max score first avoids overflow without changing the result": "If we subtract something from every score, doesn't that change the answer?"
+  },
+  "chain-rule": {
+    "the derivative of f(g(x)) is f'(g(x)) times g'(x)": "Why multiply the two derivatives instead of adding them?",
+    "derivatives of nested functions multiply, they do not add": "What would go wrong if we added them instead?",
+    "differentiate the outer function then multiply by the inner derivative": "Which function do you differentiate first — the inner one or the outer one?"
+  },
+  "attention": {
+    "queries are compared with keys using dot products": "What are we even comparing a query to — where do the keys come from?",
+    "scores are scaled by sqrt(d) then passed through softmax": "What breaks if we skip the sqrt(d) scaling?",
+    "the softmax weights are used to average the values": "Once we have the softmax weights, what do we actually do with them?"
+  }
+}
