@@ -91,7 +91,57 @@ export default function Home({ onNavigate, userId }) {
           onClick={() => onNavigate("leaderboard")}
         />
       </div>
+
+      <div className="card contact-card">
+        <div className="who" style={{ marginBottom: 4 }}>Thanks for stopping by</div>
+        <h2 style={{ fontSize: 22, margin: "0 0 8px" }}>
+          We hope RootCause helps you find what's <em style={{ color: "var(--gold)", fontStyle: "italic" }}>really</em> broken, faster.
+        </h2>
+        <p className="small" style={{ marginBottom: 20 }}>
+          Questions, feedback, or just want to say hi? Reach out — we'd love to hear from you.
+        </p>
+
+        <div className="contact-links">
+          <ContactLink
+            href="mailto:pranavweb18@gmail.com"
+            icon="✉️"
+            label="Email"
+            value="pranavweb18@gmail.com"
+          />
+          <ContactLink
+            href="https://github.com/pranavsunilkumar/RootCause"
+            icon="🐙"
+            label="GitHub"
+            value="pranavsunilkumar/RootCause"
+            external
+          />
+          <ContactLink
+            href="https://www.linkedin.com/in/pranav-muchalum-25a9a8323/"
+            icon="in"
+            label="LinkedIn"
+            value="pranav-muchalum"
+            external
+          />
+        </div>
+      </div>
     </>
+  );
+}
+
+function ContactLink({ href, icon, label, value, external }) {
+  return (
+    <a
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer" : undefined}
+      className="contact-link"
+    >
+      <span className="contact-link-icon">{icon}</span>
+      <span>
+        <span className="contact-link-label">{label}</span>
+        <span className="contact-link-value">{value}</span>
+      </span>
+    </a>
   );
 }
 

@@ -26,11 +26,34 @@ const NODE_META = {
   transformers: { category: "Architecture", desc: "Fully attention-driven sequence architecture." }
 };
 
+// Builds a soft radial-gradient texture used for the additive glow halo
+// behind each node -- MeshStandardMaterial's emissive alone doesn't bloom,
+// it only brightens the sphere's own surface, so without this sprite
+// "glowing" nodes just look like slightly lighter solid balls.
+function makeGlowTexture(hexColor) {
+  const size = 128;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  const color = `#${hexColor.toString(16).padStart(6, "0")}`;
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, color + "ff");
+  gradient.addColorStop(0.4, color + "88");
+  gradient.addColorStop(1, color + "00");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(canvas);
+}
+
 // --- 3D Concept Galaxy Component ---
 function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
   const containerRef = useRef(null);
+  const cameraControlRef = useRef({ flyTo: null });
   const [selectedNode, setSelectedNode] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [energyFlow, setEnergyFlow] = useState(false);
+  const [fogOfWar, setFogOfWar] = useState(false);
 
   // Auto-calculate topological tiers for 3D layout
   const tieredConcepts = useMemo(() => {
@@ -88,6 +111,14 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
     const tierDepths = [-120, -50, 20, 90, 160, 230];
     const tierSpreads = [60, 80, 90, 80, 60, 30];
     const meshes = [];
+    const edgeFlows = []; // populated below, animated per-frame when energyFlow is on
+
+    // Fog of War: a node is "reachable" once every one of its prereqs is
+    // mastered (or it has none). Locked nodes get rendered as faint,
+    // featureless silhouettes with no label, so the graph reveals itself
+    // as you actually unlock concepts instead of showing everything at once.
+    const isUnlocked = (node) =>
+      !node.prereqs || node.prereqs.length === 0 || node.prereqs.every((pid) => statusById[pid] === "mastered");
 
     // Group and Position Nodes
     const tierGroups = {};
@@ -109,33 +140,75 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
         const status = statusById[node.id] || "unseen";
         const isMastered = status === "mastered";
         const isWeak = status === "weak";
-        
-        const color = isMastered ? 0x7cc576 : isWeak ? 0xf2b84b : 0x6b665d;
+        const locked = fogOfWar && !isUnlocked(node);
+
+        const color = locked ? 0x2a2620 : isMastered ? 0x7cc576 : isWeak ? 0xf2b84b : 0x6b665d;
         const size = isMastered ? 6 : isWeak ? 5 : 4;
 
         const geo = new THREE.SphereGeometry(size, 24, 24);
-        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: isMastered ? 0.6 : 0.2 });
+        const mat = new THREE.MeshStandardMaterial({
+          color,
+          emissive: color,
+          emissiveIntensity: locked ? 0 : isMastered ? 0.6 : 0.2,
+          transparent: locked,
+          opacity: locked ? 0.35 : 1,
+        });
         const sphere = new THREE.Mesh(geo, mat);
         sphere.position.copy(node.pos);
-        sphere.userData = { id: node.id, node };
+        sphere.userData = { id: node.id, node, locked };
         
         scene.add(sphere);
         meshes.push(sphere);
 
-        // Add 3D Text Sprite
-        const canvas = document.createElement('canvas');
-        canvas.width = 256; canvas.height = 64;
-        const ctx = canvas.getContext('2d');
-        ctx.font = 'bold 22px Inter, sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = isMastered ? '#7cc576' : isWeak ? '#f2b84b' : '#9e988e';
-        ctx.fillText(node.name, 128, 32);
-        const tex = new THREE.CanvasTexture(canvas);
-        const spriteMat = new THREE.SpriteMaterial({ map: tex });
-        const sprite = new THREE.Sprite(spriteMat);
-        sprite.scale.set(35, 8.5, 1);
-        sprite.position.set(0, -size - 4, 0);
-        sphere.add(sprite);
+        // Fog of War: locked nodes are rendered as dim silhouettes with no
+        // glow and no label -- the graph reveals detail as prereqs clear.
+        if (!locked) {
+          // Additive-blended glow halo -- bigger and brighter for mastered
+          // nodes, faint for weak, nearly invisible for unseen so attention
+          // naturally goes to what's been learned.
+          const glowScale = isMastered ? size * 7 : isWeak ? size * 4.5 : size * 2.5;
+          const glowOpacity = isMastered ? 0.9 : isWeak ? 0.55 : 0.25;
+          const glowMat = new THREE.SpriteMaterial({
+            map: makeGlowTexture(color),
+            transparent: true,
+            opacity: glowOpacity,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          });
+          const glowSprite = new THREE.Sprite(glowMat);
+          glowSprite.scale.set(glowScale, glowScale, 1);
+          sphere.add(glowSprite);
+
+          // Add 3D Text Sprite
+          const canvas = document.createElement('canvas');
+          canvas.width = 256; canvas.height = 64;
+          const ctx = canvas.getContext('2d');
+          ctx.font = 'bold 22px Inter, sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = isMastered ? '#7cc576' : isWeak ? '#f2b84b' : '#9e988e';
+          ctx.fillText(node.name, 128, 32);
+          const tex = new THREE.CanvasTexture(canvas);
+          const spriteMat = new THREE.SpriteMaterial({ map: tex });
+          const sprite = new THREE.Sprite(spriteMat);
+          sprite.scale.set(35, 8.5, 1);
+          sprite.position.set(0, -size - 4, 0);
+          sphere.add(sprite);
+        } else {
+          // Small "?" marker instead of a name, so locked nodes still read
+          // as "something is here" without spoiling what it is.
+          const canvas = document.createElement('canvas');
+          canvas.width = 64; canvas.height = 64;
+          const ctx = canvas.getContext('2d');
+          ctx.font = 'bold 36px Inter, sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = 'rgba(158, 152, 142, 0.5)';
+          ctx.fillText('?', 32, 34);
+          const tex = new THREE.CanvasTexture(canvas);
+          const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6 });
+          const sprite = new THREE.Sprite(spriteMat);
+          sprite.scale.set(6, 6, 1);
+          sphere.add(sprite);
+        }
       });
     });
 
@@ -145,12 +218,16 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
       target.prereqs.forEach(pid => {
         const source = tieredConcepts.find(c => c.id === pid);
         if (!source || !source.pos || !target.pos) return;
-        
+
+        // Fog of War: hide edges leading into nodes that aren't unlocked
+        // yet -- no point revealing the shape of what's still hidden.
+        if (fogOfWar && !isUnlocked(target)) return;
+
         const mid = source.pos.clone().lerp(target.pos, 0.5);
         mid.y += 20; // Arch upward
 
         const curve = new THREE.QuadraticBezierCurve3(source.pos, mid, target.pos);
-        const points = curve.getPoints(20);
+        const points = curve.getPoints(40);
         const geo = new THREE.BufferGeometry().setFromPoints(points);
         
         const isMasteredEdge = (statusById[source.id] === "mastered" && statusById[target.id] === "mastered");
@@ -160,6 +237,24 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
           opacity: isMasteredEdge ? 0.6 : 0.3 
         });
         scene.add(new THREE.Line(geo, mat));
+
+        // Energy Flow: a bright particle traveling source -> target along
+        // the same curve, only on edges where the source is mastered
+        // (i.e. energy only flows out of concepts you've actually learned).
+        if (energyFlow && statusById[source.id] === "mastered") {
+          const flowColor = isMasteredEdge ? 0x7cc576 : 0xf2b84b;
+          const flowMat = new THREE.SpriteMaterial({
+            map: makeGlowTexture(flowColor),
+            transparent: true,
+            opacity: 0.95,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+          });
+          const flowSprite = new THREE.Sprite(flowMat);
+          flowSprite.scale.set(5, 5, 1);
+          scene.add(flowSprite);
+          edgeFlows.push({ points, sprite: flowSprite, offset: Math.random(), speed: 0.004 + Math.random() * 0.003 });
+        }
       });
     });
 
@@ -186,10 +281,11 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
       raycaster.setFromCamera(mouse, camera);
       const hits = raycaster.intersectObjects(meshes);
       if (hits.length > 0) {
-        const clickedNode = hits[0].object.userData.node;
-        setSelectedNode(clickedNode);
+        const { node, locked } = hits[0].object.userData;
+        if (locked) return; // nothing to show yet -- still fogged
+        setSelectedNode(node);
         // Gently fly camera to node
-        targetCenter.copy(clickedNode.pos);
+        targetCenter.copy(node.pos);
         distance = 120;
       }
     };
@@ -211,10 +307,27 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
       distance = Math.max(50, Math.min(500, distance + e.deltaY * 0.2));
     });
 
+    // Let the "Diagnose this node" / breadcrumb click handler fly the
+    // camera to an arbitrary node found by name search too.
+    cameraControlRef.current.flyTo = (node) => {
+      if (!node?.pos) return;
+      targetCenter.copy(node.pos);
+      distance = 120;
+    };
+
     let reqId;
     const animate = () => {
       if (!isDragging) cameraTheta += 0.001; // Auto orbit
       updateCam();
+
+      if (energyFlow) {
+        for (const flow of edgeFlows) {
+          flow.offset = (flow.offset + flow.speed) % 1;
+          const idx = Math.min(flow.points.length - 1, Math.floor(flow.offset * flow.points.length));
+          flow.sprite.position.copy(flow.points[idx]);
+        }
+      }
+
       renderer.render(scene, camera);
       reqId = requestAnimationFrame(animate);
     };
@@ -225,13 +338,16 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
       renderer.dispose();
       renderer.domElement.removeEventListener('click', onClick);
     };
-  }, [tieredConcepts, statusById]);
+  }, [tieredConcepts, statusById, energyFlow, fogOfWar]);
 
   // Handle Search
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
     const match = tieredConcepts.find(c => c.name.toLowerCase().includes(e.target.value.toLowerCase()));
-    if (match && e.target.value.length > 2) setSelectedNode(match);
+    if (match && e.target.value.length > 2) {
+      setSelectedNode(match);
+      cameraControlRef.current.flyTo?.(match);
+    }
   };
 
   return (
@@ -239,8 +355,8 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
       {/* 3D Canvas Container */}
       <div ref={containerRef} style={{ width: "100%", height: "100%", cursor: "grab" }} />
 
-      {/* Floating Search Bar */}
-      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
+      {/* Floating Search Bar + View Toggles */}
+      <div style={{ position: "absolute", top: 16, right: 16, zIndex: 10, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px" }}>
         <input 
           type="text" 
           placeholder="Search concepts..." 
@@ -248,6 +364,40 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
           onChange={handleSearch}
           style={{ width: "180px", padding: "8px 12px", background: "rgba(14, 11, 8, 0.8)", backdropFilter: "blur(4px)", border: "1px solid var(--panel-border)", borderRadius: "8px", color: "var(--text)", fontSize: "12px" }}
         />
+        <div style={{ display: "flex", gap: "6px" }}>
+          <button
+            onClick={() => setEnergyFlow((v) => !v)}
+            title="Animate energy flowing out of mastered concepts along their edges"
+            style={{
+              padding: "6px 10px",
+              fontSize: "11px",
+              borderRadius: "8px",
+              border: "1px solid var(--panel-border)",
+              background: energyFlow ? "rgba(242, 184, 75, 0.25)" : "rgba(14, 11, 8, 0.8)",
+              color: energyFlow ? "var(--gold)" : "var(--text-dim)",
+              cursor: "pointer",
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            ⚡ Energy Flow
+          </button>
+          <button
+            onClick={() => setFogOfWar((v) => !v)}
+            title="Hide concepts whose prerequisites aren't mastered yet"
+            style={{
+              padding: "6px 10px",
+              fontSize: "11px",
+              borderRadius: "8px",
+              border: "1px solid var(--panel-border)",
+              background: fogOfWar ? "rgba(242, 184, 75, 0.25)" : "rgba(14, 11, 8, 0.8)",
+              color: fogOfWar ? "var(--gold)" : "var(--text-dim)",
+              cursor: "pointer",
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            🌫 Fog of War
+          </button>
+        </div>
       </div>
 
       {/* Dynamic Breadcrumb Path */}
@@ -256,7 +406,21 @@ function ThreeGalaxyMap({ concepts, statusById, onSelect }) {
           <span style={{ fontSize: "11px", color: "var(--gold)", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.05em", marginRight: "4px" }}>Path:</span>
           {getBreadcrumbPath(selectedNode.id).map((node, i, arr) => (
             <React.Fragment key={node.id}>
-              <span style={{ fontSize: "12px", color: i === arr.length - 1 ? "var(--text)" : "var(--text-dim)", fontWeight: i === arr.length - 1 ? "bold" : "normal" }}>
+              <span
+                onClick={() => {
+                  setSelectedNode(node);
+                  cameraControlRef.current.flyTo?.(node);
+                }}
+                style={{
+                  fontSize: "12px",
+                  color: i === arr.length - 1 ? "var(--text)" : "var(--text-dim)",
+                  fontWeight: i === arr.length - 1 ? "bold" : "normal",
+                  cursor: "pointer",
+                  textDecoration: node.id === selectedNode.id ? "none" : "underline",
+                  textDecorationColor: "var(--panel-border)",
+                }}
+                title={`Jump to ${node.name}`}
+              >
                 {node.name}
               </span>
               {i < arr.length - 1 && <span style={{ color: "var(--text-dim)", fontSize: "10px" }}>➔</span>}
