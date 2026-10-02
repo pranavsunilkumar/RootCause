@@ -20,7 +20,7 @@ export default function Auth({ onAuthSuccess }) {
         onAuthSuccess(data.access_token, username);
       } else {
         // Assuming api.register creates the user, then we log them in
-        await api.register(username, password);
+        await api.register(username, null, password);
         const data = await api.login(username, password);
         onAuthSuccess(data.access_token, username);
       }

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { api, auth } from "./api.js";
+import Auth from "./components/Auth.jsx"; // Imported new Auth gate
 import Diagnose from "./components/Diagnose.jsx";
 import BugHunt from "./components/BugHunt.jsx";
 import TeachBack from "./components/TeachBack.jsx";
 import Progress from "./components/Progress.jsx";
 import Path from "./components/Path.jsx";
 import Home from "./components/Home.jsx";
-import Login from "./components/Login.jsx";
 import Profile from "./components/Profile.jsx";
 import Leaderboard from "./components/Leaderboard.jsx";
 import Analytics from "./components/Analytics.jsx";
@@ -23,37 +23,30 @@ const TABS = [
   { id: "analytics", label: "Analytics" },
 ];
 
-const USER_KEY = "rootcause_user_id";
-
 export default function App() {
   const [tab, setTab] = useState("home");
-  const [userId, setUserId] = useState(() => localStorage.getItem(USER_KEY) || "demo-learner");
-  const [editingName, setEditingName] = useState(() => !localStorage.getItem(USER_KEY));
+  const [account, setAccount] = useState(null);
   const [apiDown, setApiDown] = useState(false);
   const [prefillTarget, setPrefillTarget] = useState(null);
-  const [account, setAccount] = useState(null);
-
-  function saveName(v) {
-    const name = (v || "").trim() || "demo-learner";
-    setUserId(name);
-    setEditingName(false);
-  }
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    api.health().catch(() => setApiDown(true));
+    
+    // Check session on load
     if (auth.isLoggedIn()) {
-      api
-        .me()
-        .then((u) => {
-          setAccount(u);
-          setUserId(u.username); // logged-in identity always wins over the free-text id
-        })
-        .catch(() => auth.clearToken());
+      api.me()
+        .then((u) => setAccount(u))
+        .catch(() => auth.clearToken())
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
     }
   }, []);
 
-  function handleAuthed(user) {
-    setAccount(user);
-    setUserId(user.username);
+  function handleAuthSuccess(token, username) {
+    auth.setToken(token);
+    setAccount({ username }); // Briefly set username until api.me() syncs it
     setTab("home");
   }
 
@@ -67,14 +60,32 @@ export default function App() {
     setTab("diagnose");
   }
 
-  useEffect(() => {
-    localStorage.setItem(USER_KEY, userId);
-  }, [userId]);
+  if (apiDown) {
+    return (
+      <div className="error-banner" style={{ margin: 20 }}>
+        Can't reach the RootCause API at the configured URL. Start the backend
+        (<code>uvicorn app.main:app --reload --port 8000</code>) or check{" "}
+        <code>VITE_API_BASE</code> in your <code>.env</code>.
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    api.health().catch(() => setApiDown(true));
-  }, []);
+  if (isLoading) {
+    return <div style={{ padding: 40, color: "var(--gold)" }}>Verifying session...</div>;
+  }
 
+  // --- STRICT AUTHENTICATION GATE ---
+  if (!account) {
+    return (
+      <div id="root">
+        <Auth onAuthSuccess={handleAuthSuccess} />
+      </div>
+    );
+  }
+
+  const userId = account.username;
+
+  // --- SECURE MAIN APPLICATION ---
   return (
     <>
       <header className="app-header">
@@ -97,56 +108,34 @@ export default function App() {
             </button>
           ))}
         </nav>
-      </header>
-
-      {apiDown && (
-        <div className="error-banner">
-          Can't reach the RootCause API at the configured URL. Start the backend
-          (<code>uvicorn app.main:app --reload --port 8000</code>) or check{" "}
-          <code>VITE_API_BASE</code> in your <code>.env</code>.
+        
+        {/* Username display -- logout lives in the Profile tab now */}
+        <div
+          style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", paddingRight: 48 }}
+          onClick={() => setTab("profile")}
+          title="Go to profile"
+        >
+          <span
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: "var(--gold)",
+              color: "#0e0b08",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: 13,
+              textTransform: "uppercase",
+              flexShrink: 0,
+            }}
+          >
+            {userId.charAt(0)}
+          </span>
+          <strong style={{ color: "var(--gold)", fontSize: 13 }}>{userId}</strong>
         </div>
-      )}
-
-      <div className="card" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {account ? (
-          <>
-            <span className="small">Logged in as</span>
-            <strong>{account.username}</strong>
-            <button className="ghost" onClick={logout}>
-              Log out
-            </button>
-          </>
-        ) : editingName ? (
-          <>
-            <span className="small">What should we call you?</span>
-            <input
-              type="text"
-              style={{ maxWidth: 220 }}
-              placeholder="Your name"
-              defaultValue={localStorage.getItem(USER_KEY) || ""}
-              onKeyDown={(e) => e.key === "Enter" && saveName(e.currentTarget.value)}
-              autoFocus
-              id="nameInput"
-            />
-            <button className="ghost" onClick={() => saveName(document.getElementById("nameInput").value)}>
-              Save
-            </button>
-          </>
-        ) : (
-          <>
-            <span>
-              👋 Hi, <strong>{userId}</strong>
-            </span>
-            <button className="ghost" onClick={() => setEditingName(true)}>
-              Not you?
-            </button>
-            <span className="small">— progress is saved in this browser only, or</span>
-            <button className="ghost" onClick={() => setTab("login")}>
-              log in for a real account
-            </button>
-          </>
-        )}
-      </div>
+      </header>
 
       {tab === "home" && <Home onNavigate={setTab} userId={userId} />}
       {tab === "diagnose" && (
@@ -156,8 +145,7 @@ export default function App() {
       {tab === "teachback" && <TeachBack userId={userId} />}
       {tab === "path" && <Path userId={userId} onDiagnoseConcept={diagnoseConcept} />}
       {tab === "progress" && <Progress userId={userId} onDiagnoseConcept={diagnoseConcept} />}
-      {tab === "login" && <Login onAuthed={handleAuthed} />}
-      {tab === "profile" && <Profile userId={userId} account={account} />}
+      {tab === "profile" && <Profile userId={userId} account={account} onLogout={logout} />}
       {tab === "leaderboard" && <Leaderboard userId={userId} />}
       {tab === "analytics" && <Analytics />}
 

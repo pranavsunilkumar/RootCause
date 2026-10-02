@@ -26,7 +26,7 @@ async function request(path, options = {}) {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = body.detail || detail;
+      detail = formatErrorDetail(body.detail) || detail;
     } catch {
       /* ignore */
     }
@@ -36,13 +36,30 @@ async function request(path, options = {}) {
   return res.json();
 }
 
+function formatErrorDetail(detail) {
+  // FastAPI validation errors (422) send `detail` as a list of
+  // { loc, msg, type } objects instead of a string -- stringify those
+  // into something readable instead of letting them become
+  // "[object Object]" in the thrown error message.
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => {
+        if (typeof d === "string") return d;
+        const field = Array.isArray(d.loc) ? d.loc[d.loc.length - 1] : d.loc;
+        return field ? `${field}: ${d.msg}` : d.msg;
+      })
+      .join("; ");
+  }
+  return detail;
+}
+
 async function requestForm(path, formBody) {
   const res = await fetch(`${BASE}${path}`, { method: "POST", body: formBody });
   if (!res.ok) {
     let detail = res.statusText;
     try {
       const body = await res.json();
-      detail = body.detail || detail;
+      detail = formatErrorDetail(body.detail) || detail;
     } catch {
       /* ignore */
     }

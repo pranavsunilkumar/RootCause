@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 
-export default function Profile({ userId, account }) {
+export default function Profile({ userId, account, onLogout }) {
   const [gami, setGami] = useState(null);
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState("");
@@ -16,14 +16,38 @@ export default function Profile({ userId, account }) {
       {error && <div className="error-banner">{error}</div>}
       <div className="card">
         <div className="label">Profile</div>
-        <h2>{userId}</h2>
-        {account ? (
-          <p className="small">
-            Logged in{account.email ? ` · ${account.email}` : ""} — a real account, progress follows you anywhere.
-          </p>
-        ) : (
-          <p className="small">Anonymous / browser-local learner. Log in to keep this progress on other devices.</p>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 4 }}>
+          <span
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              background: "var(--gold)",
+              color: "#0e0b08",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: 24,
+              textTransform: "uppercase",
+              flexShrink: 0,
+            }}
+          >
+            {userId.charAt(0)}
+          </span>
+          <div>
+            <h2 style={{ margin: 0, textTransform: "capitalize" }}>{userId}</h2>
+            {account ? (
+              <p className="small" style={{ margin: "2px 0 0" }}>
+                Logged in{account.email ? ` · ${account.email}` : ""} — a real account, progress follows you anywhere.
+              </p>
+            ) : (
+              <p className="small" style={{ margin: "2px 0 0" }}>
+                Anonymous / browser-local learner. Log in to keep this progress on other devices.
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {gami && (
@@ -49,6 +73,14 @@ export default function Profile({ userId, account }) {
           <div className="bar-row"><span style={{ width: 90, fontSize: 13 }}>Mastered</span>
             <div className="bar-track"><div className="bar-fill" style={{ width: `${(progress.mastered/progress.entries.length*100)||0}%` }} /></div>
             <span className="small">{progress.mastered}/{progress.entries.length}</span></div>
+        </div>
+      )}
+
+      {onLogout && (
+        <div className="card">
+          <button className="ghost" onClick={onLogout} style={{ width: "100%", color: "var(--danger)" }}>
+            Log out
+          </button>
         </div>
       )}
     </>
