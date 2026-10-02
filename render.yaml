@@ -8,5 +8,9 @@ services:
     envVars:
       - key: GEMINI_API_KEY
         sync: false
-      - key: ROOTCAUSE_DB
-        value: /opt/render/project/src/backend/rootcause.db
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        sync: false
