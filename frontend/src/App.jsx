@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { api, auth } from "./api.js";
-import Auth from "./components/Auth.jsx"; // Imported new Auth gate
+import { api } from "./api.js";
 import Diagnose from "./components/Diagnose.jsx";
 import BugHunt from "./components/BugHunt.jsx";
 import TeachBack from "./components/TeachBack.jsx";
@@ -23,36 +22,30 @@ const TABS = [
   { id: "analytics", label: "Analytics" },
 ];
 
+const USER_KEY = "rootcause_user_id";
+
 export default function App() {
   const [tab, setTab] = useState("home");
-  const [account, setAccount] = useState(null);
+  const [userId, setUserId] = useState(() => localStorage.getItem(USER_KEY) || "");
+  const [nameInput, setNameInput] = useState("");
   const [apiDown, setApiDown] = useState(false);
   const [prefillTarget, setPrefillTarget] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     api.health().catch(() => setApiDown(true));
-    
-    // Check session on load
-    if (auth.isLoggedIn()) {
-      api.me()
-        .then((u) => setAccount(u))
-        .catch(() => auth.clearToken())
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
   }, []);
 
-  function handleAuthSuccess(token, username) {
-    auth.setToken(token);
-    setAccount({ username }); // Briefly set username until api.me() syncs it
-    setTab("home");
+  function saveName(v) {
+    const name = (v || "").trim();
+    if (!name) return;
+    localStorage.setItem(USER_KEY, name);
+    setUserId(name);
   }
 
-  function logout() {
-    auth.clearToken();
-    setAccount(null);
+  function changeName() {
+    localStorage.removeItem(USER_KEY);
+    setNameInput("");
+    setUserId("");
   }
 
   function diagnoseConcept(conceptId) {
@@ -70,22 +63,38 @@ export default function App() {
     );
   }
 
-  if (isLoading) {
-    return <div style={{ padding: 40, color: "var(--gold)" }}>Verifying session...</div>;
-  }
-
-  // --- STRICT AUTHENTICATION GATE ---
-  if (!account) {
+  // --- NAME GATE: no accounts, just a display name saved locally ---
+  if (!userId) {
     return (
-      <div id="root">
-        <Auth onAuthSuccess={handleAuthSuccess} />
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "80vh" }}>
+        <div className="card" style={{ width: "100%", maxWidth: 400, padding: 32, textAlign: "center" }}>
+          <div className="brand" style={{ marginBottom: 8 }}>
+            Root<em>Cause</em>
+          </div>
+          <p className="small" style={{ marginBottom: 24 }}>
+            Diagnoses which upstream AI/ML concept actually broke.
+          </p>
+          <h2 style={{ fontSize: 20, marginBottom: 16 }}>What should we call you?</h2>
+          <input
+            type="text"
+            placeholder="e.g., student_01"
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && saveName(nameInput)}
+            autoFocus
+            style={{ marginBottom: 14 }}
+          />
+          <button className="primary" style={{ width: "100%" }} onClick={() => saveName(nameInput)}>
+            Continue
+          </button>
+          <p className="small" style={{ marginTop: 14 }}>
+            No account needed — progress is saved in this browser.
+          </p>
+        </div>
       </div>
     );
   }
 
-  const userId = account.username;
-
-  // --- SECURE MAIN APPLICATION ---
   return (
     <>
       <header className="app-header">
@@ -108,8 +117,8 @@ export default function App() {
             </button>
           ))}
         </nav>
-        
-        {/* Username display -- logout lives in the Profile tab now */}
+
+        {/* Username display -- "change name" lives in the Profile tab now */}
         <div
           style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", paddingRight: 48 }}
           onClick={() => setTab("profile")}
@@ -145,7 +154,7 @@ export default function App() {
       {tab === "teachback" && <TeachBack userId={userId} />}
       {tab === "path" && <Path userId={userId} onDiagnoseConcept={diagnoseConcept} />}
       {tab === "progress" && <Progress userId={userId} onDiagnoseConcept={diagnoseConcept} />}
-      {tab === "profile" && <Profile userId={userId} account={account} onLogout={logout} />}
+      {tab === "profile" && <Profile userId={userId} onChangeName={changeName} />}
       {tab === "leaderboard" && <Leaderboard userId={userId} />}
       {tab === "analytics" && <Analytics />}
 

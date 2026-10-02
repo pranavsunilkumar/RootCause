@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api.js";
 
-export default function Profile({ userId, account, onLogout }) {
+export default function Profile({ userId, onChangeName }) {
   const [gami, setGami] = useState(null);
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState("");
@@ -37,15 +37,9 @@ export default function Profile({ userId, account, onLogout }) {
           </span>
           <div>
             <h2 style={{ margin: 0, textTransform: "capitalize" }}>{userId}</h2>
-            {account ? (
-              <p className="small" style={{ margin: "2px 0 0" }}>
-                Logged in{account.email ? ` · ${account.email}` : ""} — a real account, progress follows you anywhere.
-              </p>
-            ) : (
-              <p className="small" style={{ margin: "2px 0 0" }}>
-                Anonymous / browser-local learner. Log in to keep this progress on other devices.
-              </p>
-            )}
+            <p className="small" style={{ margin: "2px 0 0" }}>
+              Progress is saved in this browser only.
+            </p>
           </div>
         </div>
       </div>
@@ -76,10 +70,10 @@ export default function Profile({ userId, account, onLogout }) {
         </div>
       )}
 
-      {onLogout && (
+      {onChangeName && (
         <div className="card">
-          <button className="ghost" onClick={onLogout} style={{ width: "100%", color: "var(--danger)" }}>
-            Log out
+          <button className="ghost" onClick={onChangeName} style={{ width: "100%", color: "var(--danger)" }}>
+            Not {userId}? Change name
           </button>
         </div>
       )}
